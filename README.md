@@ -319,29 +319,85 @@ See `CONTRIBUTING.md` for:
 
 ## 🗺️ Roadmap
 
-### Current Version: 0.1.0 (Alpha)
+### Current Version: 0.1.5 (December 2025)
 
-- [x] Core EVM execution engine
-- [x] Multi-language compiler (Solidity, Quorlin)
-- [x] Parallel execution prototype
-- [x] E2E integration tests
-- [x] CLI compiler tool
+**Completed:**
+- [x] Core EVM execution engine with full opcode support
+- [x] Multi-language compiler (Solidity, Quorlin, Vyper, Move)
+- [x] **Full Vyper and Move frontend support** ⭐ *Just Completed*
+- [x] Parallel execution prototype with correctness validation
+- [x] Comprehensive E2E integration tests
+- [x] CLI compiler tool with deterministic builds
+- [x] Gas fee metering and tracking across all languages
 
-### Version 0.2.0 (Q1 2025)
+**Current Focus:**
+- Production-ready ABI generation
+- Enhanced test coverage (Ethereum test suite)
 
-- [ ] Full Vyper and Move frontend support
-- [ ] Optimistic parallel execution (Block-STM)
-- [ ] Production-ready ABI generation
-- [ ] JSON-RPC server wrapper
-- [ ] State trie implementation
+---
 
-### Version 1.0.0 (Q2 2025)
+### Version 0.2.0 (Q2 2025 → Q1 2026)
 
-- [ ] Full EVM equivalence (Ethereum test suite passing)
-- [ ] Persistent storage backends
-- [ ] MEV protection mechanisms
-- [ ] Cross-chain bridge deployment
-- [ ] Performance parity with Geth/Reth
+**Remaining Goals:**
+- [ ] **Optimistic parallel execution (Block-STM)** - High Priority
+  - Conflict detection and resolution
+  - Speculative execution engine
+  - Performance benchmarks vs sequential
+  
+- [ ] **Production-ready ABI generation** - In Progress
+  - Full Solidity ABI encoding/decoding
+  - Event and error signatures
+  - Function selector calculation
+  
+- [ ] **JSON-RPC server wrapper** - Medium Priority
+  - `eth_call`, `eth_sendTransaction` endpoints
+  - WebSocket support for subscriptions
+  - Rate limiting and authentication
+  
+- [ ] **State trie implementation** - Medium Priority
+  - Merkle Patricia Trie
+  - State root calculation
+  - Proof generation
+
+---
+
+### Version 1.0.0 (Q3 2025 → Q3 2026)
+
+**Production Readiness:**
+- [ ] **Full EVM equivalence**
+  - Ethereum Foundation test suite (100% pass rate)
+  - Edge case coverage
+  - Opcode parity with latest EIPs
+  
+- [ ] **Persistent storage backends**
+  - RocksDB integration
+  - PostgreSQL adapter
+  - State snapshots and pruning
+  
+- [ ] **MEV protection mechanisms**
+  - Fair transaction ordering
+  - Frontrunning detection
+  - MEV auction integration
+  
+- [ ] **Cross-chain bridge deployment**
+  - Production bridge contracts
+  - Multi-chain message passing
+  - Security audits
+  
+- [ ] **Performance parity with Geth/Reth**
+  - 10,000+ TPS on modern hardware
+  - Sub-100ms block processing
+  - Optimized database queries
+
+---
+
+### Version 2.0.0 (2027+)
+
+**Advanced Features:**
+- [ ] ZK-EVM integration
+- [ ] Account abstraction (EIP-4337)
+- [ ] Stateless client support
+- [ ] Advanced MEV strategies
 
 ---
 
