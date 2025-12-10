@@ -1,0 +1,9 @@
+[package]
+name = "evmora-plugins"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+primitive-types = { workspace = true }

@@ -1,0 +1,17 @@
+[package]
+name = "evmora-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+primitive-types = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+sha3 = { workspace = true }
+rand = { workspace = true }
+config = { workspace = true }
+serde_json = { workspace = true }
+secp256k1 = { workspace = true }
+bytes = { workspace = true }

@@ -1,0 +1,22 @@
+[package]
+name = "evmora-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+evmora-core = { path = "../evmora-core" }
+evmora-bridge = { path = "../evmora-bridge" }
+evmora-compiler = { path = "../evmora-compiler" }
+evmora-plugins = { path = "../evmora-plugins" }
+evmora-utils = { path = "../evmora-utils" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+clap = { workspace = true }
+config = { workspace = true }
+primitive-types = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true }

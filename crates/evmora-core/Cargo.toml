@@ -1,0 +1,22 @@
+[package]
+name = "evmora-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+evmora-utils = { path = "../evmora-utils" }
+evmora-plugins = { path = "../evmora-plugins" }
+primitive-types = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+bytes = { workspace = true }
+sha3 = { workspace = true }
+rayon = { workspace = true }
+parking_lot = { workspace = true }
+ahash = { workspace = true }
+secp256k1 = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
