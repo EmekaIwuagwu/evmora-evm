@@ -30,26 +30,6 @@ Evmora is architected as a **layered system** with clear separation of concerns:
 │                    Core Engine                           │
 │     (Stack, Memory, Storage, Opcode Executor, Gas)      │
 └─────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🌟 Key Features
-
-### 1. **Multi-Language Compiler Framework**
-Unified compilation pipeline supporting multiple high-level languages:
-
-| Language | Extension | Status | Description |
-|----------|-----------|--------|-------------|
-| **Solidity** | `.sol` | ✅ Production | Industry-standard Ethereum contracts |
-| **Quorlin** | `.ql` | ✅ Production | Python-like syntax with EVM compilation |
-| **Vyper** | `.vy` | ⚡ Experimental | Security-focused Pythonic contracts |
-| **Move** | `.move` | ⚡ Experimental | Resource-oriented programming model |
-
-**Key Capabilities:**
-- **Single Compilation Entry Point**: `evmora-compiler compile <file> --lang <sol|ql|vy|move>`
-- **Deterministic Builds**: `--deterministic` flag for reproducible bytecode
-- **Structured Artifacts**: Outputs `bytecode.bin`, `abi.json`, `ir.json`, and `build-info.json`
 - **Extensible**: Add new languages by implementing the `CompilerFrontend` trait
 
 **Compiler Architecture:**
@@ -248,25 +228,6 @@ This demonstrates:
 
 ### Test Coverage Matrix
 
-| Category | Location | Purpose | Status |
-|----------|----------|---------|--------|
-| **Unit Tests** | `crates/*/src/**/*.rs` | Component isolation | ✅ 0 tests (structure ready) |
-| **Integration** | `crates/evmora-runtime/tests/` | End-to-end flows | ✅ 3 passing |
-| **Benchmarks** | `crates/*/benches/` | Performance validation | ✅ Configured |
-| **Examples** | `crates/*/examples/` | Usage documentation | ✅ 2 working |
-
-### Integration Test Details
-
-**e2e_multilang.rs**
-- Compiles Counter contracts in Solidity and Quorlin
-- Deploys via CREATE transaction
-- Executes `increment()` function
-- Validates storage state (counter incremented to 1)
-
-**parallel_exec.rs**
-- Executes 100 independent transactions
-- Compares serial vs parallel execution
-- Validates correctness and measures throughput
 
 **evm_compliance.rs**
 - Tests basic arithmetic operations
