@@ -20,3 +20,8 @@ rayon = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "execution_bench"
+harness = false

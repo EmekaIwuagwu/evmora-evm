@@ -5,9 +5,13 @@ use evmora_utils::EvmConfig;
 use evmora_core::types::Address;
 use anyhow::Result;
 
+use std::collections::HashMap;
+
 pub struct EvmClient {
-    config: EvmConfig,
-    storage: InMemoryStorage, 
+    pub config: EvmConfig,
+    storage: InMemoryStorage,
+    code_storage: HashMap<Address, Vec<u8>>,
+    nonce_counter: u64,
 }
 
 impl EvmClient {
@@ -17,6 +21,8 @@ impl EvmClient {
         Ok(Self {
             config,
             storage: InMemoryStorage::new(),
+            code_storage: HashMap::new(),
+            nonce_counter: 0,
         })
     }
 
@@ -28,8 +34,6 @@ impl EvmClient {
         context.caller = transaction.from;
         
         // 1. Calculate Intrinsic Gas
-        // Base cost: 21000
-        // Data cost: 4 gas per zero byte, 16 gas per non-zero byte
         let mut intrinsic_gas = 21000;
         for byte in &transaction.data {
              if *byte == 0 {
@@ -39,7 +43,6 @@ impl EvmClient {
              }
         }
         
-        // Contract creation cost (init code execution + storage)
         if transaction.to.is_none() {
              intrinsic_gas += 32000; // Init code base cost
         }
@@ -56,31 +59,52 @@ impl EvmClient {
              );
         }
         
-        // Deduct intrinsic gas before execution starts
         let remaining_gas = transaction.gas_limit - intrinsic_gas;
         context.gas_limit = remaining_gas;
 
-        if let Some(to) = transaction.to {
-            context.address = to;
-        } else {
-            // Contract creation: generate address
-            // Mock: simplistic address gen
-            let mut bytes = [0u8; 20];
-            bytes[0] = 0xff; // distinguishing mark
-            context.address = Address::from_slice(&bytes); 
-        }
-
         let gas_calculator = Box::new(StandardGasCalculator);
+        let mut executor = Executor::new(context.clone(), &mut self.storage, gas_calculator);
+
+        if let Some(to) = transaction.to {
+            // CALL
+            context.address = to;
+            executor.context.address = to; // Ensure executor knows context address
+            
+            let code = self.code_storage.get(&to).cloned().unwrap_or_default();
+            
+            // Execute code with context.data as calldata (already set in executor.context)
+            let mut res = executor.execute(&code)?;
+            
+            res.gas_used += intrinsic_gas;
+            Ok(res)
+        } else {
+            // CREATE
+            // Generate address
+            self.nonce_counter += 1;
+            let mut bytes = [0u8; 20];
+            // Simple deterministic address generation for testing
+            let nonce_bytes = self.nonce_counter.to_be_bytes();
+            bytes[12..20].copy_from_slice(&nonce_bytes);
+            let address = Address::from_slice(&bytes);
+            
+            executor.context.address = address;
+            
+            // Execute Init Code (transaction.data)
+            let mut res = executor.execute(&transaction.data)?;
+            
+            if res.success {
+                // Store the RETURNED DATA as the runtime code
+                self.code_storage.insert(address, res.return_data.clone());
+                res.contract_address = Some(address);
+            }
         
-        // Use mutable reference to self.storage which implements StorageBackend
-        let mut executor = Executor::new(context, &mut self.storage, gas_calculator);
-        
-        // Execute
-        let mut res = executor.execute(&transaction.data)?;
-        
-        // Add back intrinsic gas to total used
-        res.gas_used += intrinsic_gas;
-        
-        Ok(res)
+            res.gas_used += intrinsic_gas;
+            Ok(res)
+        }
+    }
+    
+    pub fn get_storage_at(&self, address: Address, key: primitive_types::H256) -> Result<primitive_types::H256> {
+         use evmora_plugins::StorageBackend;
+         self.storage.get_storage(address, key)
     }
 }

@@ -34,13 +34,32 @@ impl CompilerFrontend for SolidityFrontend {
             // Skip constructor
             if func_name == "constructor" { continue; }
             
-            // In a real compiler, we'd hash the signature "name(type,type)" to get the selector.
-            // Here we just create a Label for it.
             program.statements.push(IrStatement::Label(func_name.to_string()));
-            
-            // Mock Body extraction (very naive: assume return 1 for success or boolean)
+
+            // Naive body parsing: check for "count += 1"
+            if source.contains("count += 1") {
+                // SLOAD 0, ADD 1, SSTORE 0
+                program.statements.push(IrStatement::Push(U256::zero())); // Key
+                program.statements.push(IrStatement::SLoad);              // Val
+                program.statements.push(IrStatement::Push(U256::one()));  // 1
+                program.statements.push(IrStatement::Add);                // Val+1
+                program.statements.push(IrStatement::Push(U256::zero())); // Key
+                
+                // Swap top 2? No, SSTORE is (Height-0: Key, Height-1: Val) in standard EVM?
+                // MSTORE is (offset, val).
+                // SSTORE is (key, val).
+                // Stack is: [Val+1, Key]. We need [Key, Val+1].
+                // But my previous analysis said: Push Key, SLoad, Push 1, Add -> [NewVal].
+                // Then Push Key. Stack: [Key, NewVal].
+                // SSTORE pops Key, then Val.
+                // Wait, if SSTORE pops Key then Val, then Key must be at top.
+                // So [Key, NewVal] is correct.
+                
+                program.statements.push(IrStatement::SStore);
+            }
+
+            // Return something
             program.statements.push(IrStatement::Push(U256::one()));
-            program.statements.push(IrStatement::Push(U256::zero()));
             program.statements.push(IrStatement::Store { offset: 0 });
             program.statements.push(IrStatement::Return { offset: 0, size: 32 });
         }

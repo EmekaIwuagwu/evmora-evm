@@ -3,6 +3,7 @@ use crate::evm::context::ExecutionContext;
 use evmora_utils::EvmError;
 use evmora_plugins::StorageBackend;
 use primitive_types::U256;
+use sha3::{Digest, Keccak256};
 
 #[derive(Debug)]
 pub struct ExecutionResult {
@@ -161,6 +162,45 @@ impl<'a> Executor<'a> {
                     let a = self.stack.pop()?;
                     self.stack.push(!a)?;
                 }
+                0x20 => { // SHA3
+                    let offset = self.stack.pop()?.as_usize();
+                    let size = self.stack.pop()?.as_usize();
+                    let data = self.memory.load(offset, size)?;
+                    let mut hasher = Keccak256::new();
+                    hasher.update(&data);
+                    let result = hasher.finalize();
+                    self.stack.push(U256::from_big_endian(&result))?;
+                }
+                0x35 => { // CALLDATALOAD
+                    let offset = self.stack.pop()?.as_usize();
+                    let mut data = [0u8; 32];
+                    let input = &self.context.data;
+                    if offset < input.len() {
+                        let available = input.len() - offset;
+                        let n = available.min(32);
+                        data[..n].copy_from_slice(&input[offset..offset+n]);
+                    }
+                    self.stack.push(U256::from_big_endian(&data))?;
+                }
+                0x39 => { // CODECOPY
+                    let dest_offset = self.stack.pop()?.as_usize();
+                    let code_offset = self.stack.pop()?.as_usize();
+                    let length = self.stack.pop()?.as_usize();
+                    
+                    if length > 0 {
+                        let end = code_offset.saturating_add(length).min(code.len());
+                        let valid_slice = if code_offset < code.len() {
+                             &code[code_offset..end]
+                        } else {
+                             &[]
+                        };
+                        let mut data = vec![0u8; length];
+                        if !valid_slice.is_empty() {
+                            data[..valid_slice.len()].copy_from_slice(valid_slice);
+                        }
+                        self.memory.store(dest_offset, &data)?;
+                    }
+                }
                 0x50 => { // POP
                     self.stack.pop()?;
                 }
@@ -175,6 +215,28 @@ impl<'a> Executor<'a> {
                     let mut bytes = [0u8; 32];
                     val.to_big_endian(&mut bytes);
                     self.memory.store(offset, &bytes)?;
+                }
+                0x54 => { // SLOAD
+                    let key = self.stack.pop()?;
+                    // Convert U256 key to H256
+                    let mut key_bytes = [0u8; 32];
+                    key.to_big_endian(&mut key_bytes);
+                    let val = self.storage.get_storage(self.context.address, primitive_types::H256::from(key_bytes))
+                        .map_err(|e| EvmError::StorageError(e.to_string()))?;
+                    
+                    // Convert H256 val back to U256
+                    self.stack.push(U256::from_big_endian(val.as_bytes()))?;
+                }
+                0x55 => { // SSTORE
+                    let key = self.stack.pop()?;
+                    let val = self.stack.pop()?;
+                    let mut key_bytes = [0u8; 32];
+                    key.to_big_endian(&mut key_bytes);
+                    let mut val_bytes = [0u8; 32];
+                    val.to_big_endian(&mut val_bytes);
+                    
+                    self.storage.set_storage(self.context.address, primitive_types::H256::from(key_bytes), primitive_types::H256::from(val_bytes))
+                        .map_err(|e| EvmError::StorageError(e.to_string()))?;
                 }
                 0x56 => { // JUMP
                     let dest = self.stack.pop()?.as_usize();
