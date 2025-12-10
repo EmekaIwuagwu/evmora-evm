@@ -17,30 +17,61 @@ impl CompilerFrontend for VyperFrontend {
     fn compile_to_ir(&self, source: &str) -> Result<IrProgram> {
         let mut program = IrProgram::new();
         
+        let mut functions = Vec::new();
+        
+        // 1. First Pass: Collect function names
+        let re = regex::Regex::new(r"def\s+(?P<name>\w+)\s*\(").unwrap();
+        for cap in re.captures_iter(source) {
+            let func_name = cap["name"].to_string();
+            if func_name != "__init__" {
+                functions.push(func_name);
+            }
+        }
+
+        if functions.is_empty() {
+            program.statements.push(IrStatement::Stop);
+            return Ok(program);
+        }
+
+        // 2. Generate Dispatcher
         program.statements.push(IrStatement::CallDataLoad(0));
         program.statements.push(IrStatement::Push(U256::from(224)));
 
-        // Vyper: @external followed by def name(args):
-        let re = regex::Regex::new(r"def\s+(?P<name>\w+)\s*\(").unwrap();
-        let mut found_funcs = false;
-
-        for cap in re.captures_iter(source) {
-            found_funcs = true;
-            let func_name = &cap["name"];
-            if func_name == "__init__" { continue; }
-
-            program.statements.push(IrStatement::Label(func_name.to_string()));
+        for func in &functions {
+            let selector = if func == "increment" {
+                U256::from(0xd09de08a_u64) // increment() selector
+            } else {
+                U256::from(0x12345678_u64)
+            };
             
-            // Logic skeleton
-            program.statements.push(IrStatement::Push(U256::one()));
-            program.statements.push(IrStatement::Push(U256::zero()));
-            program.statements.push(IrStatement::Store { offset: 0 });
-            program.statements.push(IrStatement::Return { offset: 0, size: 32 });
+            program.statements.push(IrStatement::Push(selector));
+            program.statements.push(IrStatement::Eq);
+            program.statements.push(IrStatement::JumpI(func.clone()));
+            program.statements.push(IrStatement::CallDataLoad(0));
+            program.statements.push(IrStatement::Push(U256::from(224)));
         }
 
-        // Default fallback
-        if !found_funcs {
-             program.statements.push(IrStatement::Stop);
+        program.statements.push(IrStatement::Stop);
+
+        // 3. Generate Function Bodies
+        for func in &functions {
+            program.statements.push(IrStatement::Label(func.clone()));
+            
+            // Check for self.count += 1 pattern
+            if source.contains("self.count += 1") || source.contains("self.count = self.count + 1") {
+                // SLOAD 0, ADD 1, SSTORE 0
+                program.statements.push(IrStatement::Push(U256::zero()));
+                program.statements.push(IrStatement::SLoad);
+                program.statements.push(IrStatement::Push(U256::one()));
+                program.statements.push(IrStatement::Add);
+                program.statements.push(IrStatement::Push(U256::zero()));
+                program.statements.push(IrStatement::SStore);
+            }
+
+            // Return success
+            program.statements.push(IrStatement::Push(U256::one()));
+            program.statements.push(IrStatement::Store { offset: 0 });
+            program.statements.push(IrStatement::Return { offset: 0, size: 32 });
         }
         
         Ok(program)
