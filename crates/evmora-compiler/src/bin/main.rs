@@ -27,6 +27,10 @@ enum Commands {
         #[arg(long)]
         lang: Option<String>,
 
+        /// Target backend (evm, solana, polkadot, aptos, quorlin). Default: evm
+        #[arg(long, default_value = "evm")]
+        target: String,
+
         /// Enable deterministic build (pinned timestamp etc)
         #[arg(long, default_value_t = false)]
         deterministic: bool,
@@ -37,10 +41,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Compile { path, out, lang, deterministic } => {
+        Commands::Compile { path, out, lang, target, deterministic } => {
             let compiler = Compiler::new();
             let opts = CompileOpts {
                 language: lang,
+                target: Some(target),
                 deterministic,
             };
 

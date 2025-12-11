@@ -14,7 +14,21 @@ impl CompilerFrontend for SolidityFrontend {
         "sol"
     }
 
-    fn compile_to_ir(&self, source: &str) -> Result<IrProgram> {
+    fn compile_to_ir(&self, source: &str, backend: Option<&str>) -> Result<IrProgram> {
+        // Determine backend
+        use crate::semantics::backend::Backend;
+        let backend = match backend {
+            Some("evm") | None => Backend::EVM,
+            Some("solana") => Backend::Solana,
+            Some("polkadot") | Some("ink") => Backend::Polkadot,
+            Some("aptos") | Some("move") => Backend::Aptos,
+            Some("quorlin") => Backend::Quorlin,
+            Some(other) => return Err(anyhow::anyhow!("Unknown backend: {}", other)),
+        };
+
+        // SEMANTIC ANALYSIS
+        use super::solidity_semantics::SoliditySemantics;
+        SoliditySemantics::analyze(source, backend)?;
         let mut program = IrProgram::new();
         
         // 1. Dispatcher setup: Load Selector

@@ -4,6 +4,7 @@ pub mod optimizer;
 pub mod yul;
 pub mod ir;
 pub mod frontends;
+pub mod semantics;
 
 use frontends::{CompilerFrontend, QuorlinFrontend, SolidityFrontend, VyperFrontend, MoveFrontend};
 use codegen::Codegen;
@@ -15,6 +16,7 @@ use std::fs;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompileOpts {
     pub language: Option<String>,
+    pub target: Option<String>,
     pub deterministic: bool,
 }
 
@@ -64,7 +66,7 @@ impl Compiler {
             .find(|f| f.extension() == file_extension)
             .ok_or_else(|| anyhow!("No frontend found for extension .{}", file_extension))?;
             
-        let ir = frontend.compile_to_ir(source)?;
+        let ir = frontend.compile_to_ir(source, None)?;
         Ok(self.codegen.generate(&ir))
     }
 
@@ -86,7 +88,7 @@ impl Compiler {
             .ok_or_else(|| anyhow!("No frontend found for language/extension '{}'", target_lang_or_ext))?;
             
         let source = fs::read_to_string(path).context(format!("Failed to read source file: {}", path))?;
-        let ir = frontend.compile_to_ir(&source)?;
+        let ir = frontend.compile_to_ir(&source, opts.target.as_deref())?;
         
         // Deterministic generation
         // For now, our simple codegen is deterministic, but we'd pass flags here if needed.

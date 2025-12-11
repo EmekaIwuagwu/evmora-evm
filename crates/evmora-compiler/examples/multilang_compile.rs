@@ -3,7 +3,7 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     let compiler = Compiler::new();
-    let opts = CompileOpts { language: None, deterministic: true };
+    let opts = CompileOpts { language: None, target: None, deterministic: true };
     
     // Project root relative paths
     let paths = vec![

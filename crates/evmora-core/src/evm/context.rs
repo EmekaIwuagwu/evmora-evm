@@ -12,7 +12,11 @@ pub struct ExecutionContext {
     pub gas_price: U256,
     pub block_number: U256,
     pub block_timestamp: U256,
+    pub timestamp: u64,
     pub chain_id: U256,
+    pub coinbase: Address,
+    pub difficulty: U256,
+    pub base_fee: u64,
 }
 
 impl Default for ExecutionContext {
@@ -27,7 +31,11 @@ impl Default for ExecutionContext {
             gas_price: U256::zero(),
             block_number: U256::zero(),
             block_timestamp: U256::zero(),
+            timestamp: 0,
             chain_id: U256::one(),
+            coinbase: Address::zero(),
+            difficulty: U256::zero(),
+            base_fee: 0,
         }
     }
 }

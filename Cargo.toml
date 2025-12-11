@@ -5,7 +5,7 @@ members = [
     "crates/evmora-plugins",
     "crates/evmora-compiler",
     "crates/evmora-runtime",
-    "crates/evmora-utils",
+    "crates/evmora-utils", "crates/evmora-solana-vm", "crates/evmora-polkadot-vm", "crates/evmora-aptos-vm", "crates/evmora-quorlin-vm",
 ]
 resolver = "2"
 

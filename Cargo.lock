@@ -461,6 +461,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "evmora-aptos-vm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "evmora-bridge"
 version = "0.1.0"
 dependencies = [
@@ -487,6 +496,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 
@@ -520,6 +530,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "evmora-polkadot-vm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "evmora-quorlin-vm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "evmora-runtime"
 version = "0.1.0"
 dependencies = [
@@ -538,6 +566,15 @@ dependencies = [
  "serde",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "evmora-solana-vm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

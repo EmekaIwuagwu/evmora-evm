@@ -1,5 +1,6 @@
 use super::traits::CompilerFrontend;
 use crate::ir::{IrProgram, IrStatement};
+use crate::semantics::SemanticAnalyzer;
 use anyhow::Result;
 use primitive_types::U256;
 
@@ -14,7 +15,30 @@ impl CompilerFrontend for QuorlinFrontend {
         "ql"
     }
 
-    fn compile_to_ir(&self, source: &str) -> Result<IrProgram> {
+    fn compile_to_ir(&self, source: &str, backend: Option<&str>) -> Result<IrProgram> {
+        // Determine backend
+        use crate::semantics::backend::Backend;
+        let backend = match backend {
+            Some("evm") | None => Backend::EVM,
+            Some("solana") => Backend::Solana,
+            Some("polkadot") | Some("ink") => Backend::Polkadot,
+            Some("aptos") | Some("move") => Backend::Aptos,
+            Some("quorlin") => Backend::Quorlin,
+            Some(other) => return Err(anyhow::anyhow!("Unknown backend: {}", other)),
+        };
+
+        // SEMANTIC ANALYSIS PHASE
+        let mut analyzer = SemanticAnalyzer::for_backend(backend);
+        match analyzer.analyze(source) {
+            Ok(_result) => {
+                // Print security warnings (non-fatal)
+                analyzer.print_warnings();
+            }
+            Err(e) => {
+                // Fatal semantic errors stop compilation
+                return Err(anyhow::anyhow!("Semantic error: {}", e));
+            }
+        }
         let mut program = IrProgram::new();
         
         let mut functions = Vec::new();
