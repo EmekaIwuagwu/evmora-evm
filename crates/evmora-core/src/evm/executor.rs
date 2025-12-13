@@ -87,18 +87,11 @@ impl<'a> Executor<'a> {
                         self.stack.push(a / b)?;
                     }
                 }
-                0x05 => { // SDIV
-                     // Signed division (simplified treating as unsigned for now or should cast)
-                     // Rust's U256 doesn't have sdiv directly, need to cast to I256 equivalent logic
-                     let a = self.stack.pop()?;
-                     let b = self.stack.pop()?;
-                     if b.is_zero() {
-                         self.stack.push(U256::zero())?;
-                     } else {
-                         // TODO: True signed division
-                         self.stack.push(a / b)?; 
-                     }
+                0x05 => { // SDIV - Signed division
+                    use crate::evm::opcodes_extended::op_sdiv;
+                    op_sdiv(&mut self.stack)?;
                 }
+
                 0x06 => { // MOD
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
@@ -118,17 +111,13 @@ impl<'a> Executor<'a> {
                     let b = self.stack.pop()?;
                     if a > b { self.stack.push(U256::one())?; } else { self.stack.push(U256::zero())?; }
                 }
-                0x12 => { // SLT
-                    let a = self.stack.pop()?;
-                    let b = self.stack.pop()?;
-                    // TODO: Signed compare
-                    if a < b { self.stack.push(U256::one())?; } else { self.stack.push(U256::zero())?; }
+                0x12 => { // SLT - Signed less than
+                    use crate::evm::opcodes_extended::op_slt;
+                    op_slt(&mut self.stack)?;
                 }
-                0x13 => { // SGT
-                    let a = self.stack.pop()?;
-                    let b = self.stack.pop()?;
-                    // TODO: Signed compare
-                    if a > b { self.stack.push(U256::one())?; } else { self.stack.push(U256::zero())?; }
+                0x13 => { // SGT - Signed greater than
+                    use crate::evm::opcodes_extended::op_sgt;
+                    op_sgt(&mut self.stack)?;
                 }
                 0x14 => { // EQ
                     let a = self.stack.pop()?;
@@ -162,15 +151,9 @@ impl<'a> Executor<'a> {
                     let a = self.stack.pop()?;
                     self.stack.push(!a)?;
                 }
-                0x07 => { // SMOD
-                    let a = self.stack.pop()?;
-                    let b = self.stack.pop()?;
-                    if b.is_zero() {
-                        self.stack.push(U256::zero())?;
-                    } else {
-                        // TODO: Implement proper signed modulo
-                        self.stack.push(a % b)?;
-                    }
+                0x07 => { // SMOD - Signed modulo
+                    use crate::evm::opcodes_extended::op_smod;
+                    op_smod(&mut self.stack)?;
                 }
                 0x08 => { // ADDMOD
                     let a = self.stack.pop()?;
@@ -515,6 +498,60 @@ impl<'a> Executor<'a> {
                      let data = self.memory.load(offset, size)?;
                      return Err(EvmError::Reverted(data));
                 }
+                0xf0 => { // CREATE
+                    use crate::evm::opcodes_extended::op_create;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_create(&mut self.stack, &mut self.memory, &mut gas_left, &self.context, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xf1 => { // CALL
+                    use crate::evm::opcodes_extended::op_call;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_call(&mut self.stack, &mut self.memory, &mut gas_left, &self.context, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xf2 => { // CALLCODE (deprecated but included for compatibility)
+                    use crate::evm::opcodes_extended::op_call;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_call(&mut self.stack, &mut self.memory, &mut gas_left, &self.context, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xf4 => { // DELEGATECALL
+                    use crate::evm::opcodes_extended::op_delegatecall;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_delegatecall(&mut self.stack, &mut self.memory, &mut gas_left, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xf5 => { // CREATE2
+                    use crate::evm::opcodes_extended::op_create2;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_create2(&mut self.stack, &mut self.memory, &mut gas_left, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xfa => { // STATICCALL
+                    use crate::evm::opcodes_extended::op_staticcall;
+                    let mut gas_left = self.context.gas_limit - self.gas_used;
+                    let result = op_staticcall(&mut self.stack, &mut self.memory, &mut gas_left, 0)?;
+                    self.gas_used = self.context.gas_limit - gas_left;
+                    self.stack.push(result)?;
+                }
+                0xff => { // SELFDESTRUCT
+                    let _beneficiary = self.stack.pop()?;
+                    // TODO: Implement selfdestruct logic (mark for deletion, transfer balance)
+                    return Ok(ExecutionResult {
+                        success: true,
+                        return_data: vec![],
+                        gas_used: self.gas_used,
+                        contract_address: None,
+                        execution_time: start_time.elapsed(),
+                    });
+                }
+
                 _ => {
                     // For now, treat unknown as STOP or error?
                     // Error is safer
