@@ -9,6 +9,11 @@ evmora-bridge = { path = "../evmora-bridge" }
 evmora-compiler = { path = "../evmora-compiler" }
 evmora-plugins = { path = "../evmora-plugins" }
 evmora-utils = { path = "../evmora-utils" }
+evmora-solana-vm = { path = "../evmora-solana-vm" }
+evmora-polkadot-vm = { path = "../evmora-polkadot-vm" }
+evmora-aptos-vm = { path = "../evmora-aptos-vm" }
+evmora-quorlin-vm = { path = "../evmora-quorlin-vm" }
+sha3 = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }

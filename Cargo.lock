@@ -526,6 +526,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "parking_lot",
  "primitive-types",
 ]
 
@@ -555,15 +556,20 @@ dependencies = [
  "clap",
  "config",
  "criterion",
+ "evmora-aptos-vm",
  "evmora-bridge",
  "evmora-compiler",
  "evmora-core",
  "evmora-plugins",
+ "evmora-polkadot-vm",
+ "evmora-quorlin-vm",
+ "evmora-solana-vm",
  "evmora-utils",
  "hex",
  "primitive-types",
  "rayon",
  "serde",
+ "sha3",
  "tokio",
  "tracing",
 ]

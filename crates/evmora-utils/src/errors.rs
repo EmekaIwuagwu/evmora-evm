@@ -14,6 +14,14 @@ pub enum EvmError {
     InvalidJump,
     #[error("Memory access violation")]
     MemoryViolation,
+    #[error("Memory limit exceeded")]
+    MemoryLimitExceeded,
+    #[error("Call depth exceeded")]
+    CallDepthExceeded,
+    #[error("Insufficient balance")]
+    InsufficientBalance,
+    #[error("Contract creation failed")]
+    ContractCreationFailed,
     #[error("Context error: {0}")]
     ContextError(String),
     #[error("Storage error: {0}")]

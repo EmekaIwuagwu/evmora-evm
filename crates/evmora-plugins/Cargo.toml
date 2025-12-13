@@ -7,3 +7,5 @@ edition = "2021"
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 primitive-types = { workspace = true }
+parking_lot = { workspace = true }
+

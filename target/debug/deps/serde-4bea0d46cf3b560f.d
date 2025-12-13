@@ -1,0 +1,14 @@
+C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\deps\serde-4bea0d46cf3b560f.d: C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\build\serde-aff10547193e0874\out/private.rs
+
+C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\deps\libserde-4bea0d46cf3b560f.rlib: C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\build\serde-aff10547193e0874\out/private.rs
+
+C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\deps\libserde-4bea0d46cf3b560f.rmeta: C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\build\serde-aff10547193e0874\out/private.rs
+
+C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\emi\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\emi\Desktop\Quorlin\evmora-evm\target\debug\build\serde-aff10547193e0874\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\emi\\Desktop\\Quorlin\\evmora-evm\\target\\debug\\build\\serde-aff10547193e0874\\out

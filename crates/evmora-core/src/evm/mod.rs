@@ -1,9 +1,11 @@
 pub mod stack;
 pub mod memory;
 pub mod opcodes;
+pub mod opcodes_extended;
 pub mod executor;
 pub mod context;
 pub mod storage;
+
 
 pub use stack::Stack;
 pub use memory::Memory;
