@@ -1,4 +1,3 @@
-use hex;
 
 pub struct Codegen;
 
@@ -20,16 +19,25 @@ impl Codegen {
                 crate::ir::IrStatement::Pop |
                 crate::ir::IrStatement::Add |
                 crate::ir::IrStatement::Sub |
+                crate::ir::IrStatement::Mul |
+                crate::ir::IrStatement::Div |
+                crate::ir::IrStatement::Shr |
+                crate::ir::IrStatement::Shl |
                 crate::ir::IrStatement::Sha3 |
                 crate::ir::IrStatement::SLoad |
                 crate::ir::IrStatement::SStore |
-                crate::ir::IrStatement::Caller | 
+                crate::ir::IrStatement::Caller |
+                crate::ir::IrStatement::CallValue | 
                 crate::ir::IrStatement::Eq | 
                 crate::ir::IrStatement::And | 
                 crate::ir::IrStatement::Or | 
                 crate::ir::IrStatement::Not | 
-                crate::ir::IrStatement::IsZero => pc += 1,
+                crate::ir::IrStatement::IsZero |
+                crate::ir::IrStatement::Stop => pc += 1,
                 
+                crate::ir::IrStatement::Dup(_) => pc += 1,
+                crate::ir::IrStatement::Swap(_) => pc += 1,
+
                 crate::ir::IrStatement::Store { .. } => pc += 34, // PUSH32 (33) + MSTORE (1)
                 crate::ir::IrStatement::Load { .. } => pc += 34, // PUSH32 (33) + MLOAD (1)
                 crate::ir::IrStatement::CallDataLoad(_) => pc += 34, // PUSH32 (33) + CALLDATALOAD (1)
@@ -42,7 +50,8 @@ impl Codegen {
                     labels.insert(name.clone(), pc);
                     pc += 1; // JUMPDEST
                 },
-                _ => {} // Ignore others or treat as 0? Safe to stop?
+                crate::ir::IrStatement::RawBytecode(bytes) => pc += bytes.len(),
+                _ => {} // FunctionCall handles nested? Or unimplemented
             }
         }
         
@@ -60,6 +69,10 @@ impl Codegen {
                 crate::ir::IrStatement::Pop => bytecode.push(0x50),
                 crate::ir::IrStatement::Add => bytecode.push(0x01),
                 crate::ir::IrStatement::Sub => bytecode.push(0x03),
+                crate::ir::IrStatement::Mul => bytecode.push(0x02),
+                crate::ir::IrStatement::Div => bytecode.push(0x04),
+                crate::ir::IrStatement::Shr => bytecode.push(0x1c),
+                crate::ir::IrStatement::Shl => bytecode.push(0x1b),
                 crate::ir::IrStatement::Sha3 => bytecode.push(0x20),
                 crate::ir::IrStatement::SLoad => bytecode.push(0x54),
                 crate::ir::IrStatement::SStore => bytecode.push(0x55),
@@ -68,7 +81,19 @@ impl Codegen {
                 crate::ir::IrStatement::And => bytecode.push(0x16),
                 crate::ir::IrStatement::Or => bytecode.push(0x17),
                 crate::ir::IrStatement::Not => bytecode.push(0x19),
-                
+                crate::ir::IrStatement::Stop => bytecode.push(0x00),
+                crate::ir::IrStatement::CallValue => bytecode.push(0x34),
+                crate::ir::IrStatement::Caller => bytecode.push(0x33),
+
+                crate::ir::IrStatement::Dup(n) => {
+                    // Valid n is 1..=16
+                    bytecode.push(0x80 + (n - 1));
+                },
+                crate::ir::IrStatement::Swap(n) => {
+                    // Valid n is 1..=16
+                    bytecode.push(0x90 + (n - 1));
+                },
+
                 crate::ir::IrStatement::Store { offset } => {
                     Self::push_val(&mut bytecode, *offset);
                     bytecode.push(0x52);
@@ -91,7 +116,6 @@ impl Codegen {
                     Self::push_val(&mut bytecode, *size);
                     bytecode.push(0xfd);
                 },
-                crate::ir::IrStatement::Caller => bytecode.push(0x33),
                 
                 crate::ir::IrStatement::Jump(label) => {
                     let dest = *labels.get(label).unwrap_or(&0);
@@ -104,6 +128,7 @@ impl Codegen {
                     bytecode.push(0x57);
                 }, 
                 crate::ir::IrStatement::Label(_) => bytecode.push(0x5b), 
+                crate::ir::IrStatement::RawBytecode(bytes) => bytecode.extend_from_slice(bytes),
                 _ => {}
             }
         }

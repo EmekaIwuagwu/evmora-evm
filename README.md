@@ -1,443 +1,74 @@
-# Evmora EVM
-
-> **A Production-Grade, Multi-Language Ethereum Virtual Machine Runtime**
-
-Evmora is a high-performance, modular Ethereum Virtual Machine (EVM) implementation written in pure Rust. Designed for extensibility, it features native multi-language smart contract compilation, parallel execution capabilities, and cross-chain bridging infrastructure.
-
----
+# EVMORA EVM
 
-## 🎯 Architecture Overview
+A Rust-based Ethereum Virtual Machine implementation focused on modularity and multi-language support.
 
-Evmora is architected as a **layered system** with clear separation of concerns:
+## ⚠️ PROJECT STATUS: ALPHA
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Bridge Layer                         │
-│  (Cross-chain adapters, Token standards, Merkle Proofs)│
-└─────────────────────────────────────────────────────────┘
-                          ▲
-┌─────────────────────────────────────────────────────────┐
-│                   Runtime Layer                          │
-│      (Transaction Pool, Parallel Executor, Client)      │
-└─────────────────────────────────────────────────────────┘
-                          ▲
-┌─────────────────────────────────────────────────────────┐
-│                   Compiler Layer                         │
-│   (Multi-lang frontends → IR → EVM Bytecode Codegen)   │
-└─────────────────────────────────────────────────────────┘
-                          ▲
-┌─────────────────────────────────────────────────────────┐
-│                    Core Engine                           │
-│     (Stack, Memory, Storage, Opcode Executor, Gas)      │
-└─────────────────────────────────────────────────────────┘
-- **Extensible**: Add new languages by implementing the `CompilerFrontend` trait
+**Current State**: Feature Complete Prototype  
+**Production Ready**: ❌ No (Audit pending)  
+**Grant Submission Ready**: ✅ Yes (Core features implemented)
 
-**Compiler Architecture:**
-```rust
-Source Code → Frontend Parser → Intermediate Representation (IR) 
-            → Two-Pass Codegen → EVM Bytecode
-```
+### What Works
+- ✅ Core EVM Opcode Execution (Arithmetic, Stack, Memory, Control Flow)
+- ✅ Critical Opcodes: CALL, DELEGATECALL, CREATE, CREATE2, SELFDESTRUCT
+- ✅ Gas metering for memory expansion (Yellow Paper compliant)
+- ✅ Native multi-language compiler support (Solidity, Vyper, Quorlin, Move)
+- ✅ End-to-End Integration Tests (Compiler -> Bytecode -> Deployment -> Execution)
 
-The two-pass codegen:
-1. **Pass 1**: Calculate all label offsets
-2. **Pass 2**: Generate bytecode with resolved jump destinations
+### What Doesn't Work Yet
+- ❌ Full Ethereum Test Suite compliance (Work In Progress)
+- ❌ Performance optimization (Not yet benchmarked against Revm)
+- ❌ Persistent State Backend (Currently In-Memory)
 
----
+## Compiler Support
 
-### 2. **High-Performance EVM Core**
+### ✅ Solidity
+- **Status**: Bridge to `solc` compiler
+- **Method**: Native bridge using `solc` CLI
+- **Capabilities**: Full compilation via `solc --bin`
+- **Verified**: Integration tests pass
 
-**Stack Operations**
-- Fixed 1024-element stack with overflow/underflow protection
-- Direct `U256` manipulation for arithmetic operations
-- Zero-copy stack operations where possible
+### ✅ Vyper
+- **Status**: Bridge to `vyper` compiler
+- **Method**: Native bridge using `vyper` CLI
+- **Capabilities**: Full compilation
+- **Verified**: Integration tests pass
 
-**Memory Management**
-- Dynamic, gas-metered memory allocation
-- Efficient `MLOAD`/`MSTORE` implementations
-- Bounds checking on every access
+### ✅ Quorlin (Custom Language)
+- **Status**: Implemented (Minimal Compiler)
+- **Method**: Native recursive-descent parser (Rust)
+- **Capabilities**: Compiles `contract`, `fn`, state variables, arithmetic
+- **Verified**: E2E Deployment & Execution Test (`e2e_workflow_verified.rs`)
 
-**Storage Backend**
-- Pluggable storage via `StorageBackend` trait
-- In-memory storage for testing
-- Ready for persistent backends (RocksDB, PostgreSQL)
+### ✅ Move
+- **Status**: Implemented (Bridge)
+- **Method**: Native bridge using `aptos` / `move` CLI
+- **Capabilities**: Package generation and compilation
+- **Verified**: Integration tests pass
 
-**Gas Metering**
-- Full EIP compliance for opcode costs
-- Intrinsic gas calculation (21000 base + calldata costs)
-- Memory expansion cost tracking
+## Roadmap to Production
 
----
+**Q1 2026**
+- [ ] Pass 90%+ Ethereum official tests
+- [ ] Implement proper State Backend (RocksDB)
+- [ ] Fix critical security vulnerabilities
 
-### 3. **Parallel Execution Engine**
+**Q2 2026**
+- [ ] Performance optimization
+- [ ] Comprehensive fuzzing campaign
 
-Implements concurrent transaction processing using Rayon:
+**Q3 2026**
+- [ ] Multi-language support (advanced features)
+- [ ] Cross-chain bridge (experimental)
+- [ ] Security audit
 
-```rust
-ParallelExecutor::execute_batch(transactions) → Vec<ExecutionResult>
-```
+**Q4 2026**
+- [ ] Production beta release
 
-**Current Implementation:**
-- Mutex-protected storage (safe but serialized for conflicting txs)
-- Suitable for read-heavy or independent transaction batches
+## Contributing
 
-**Roadmap:**
-- Optimistic concurrency control (Block-STM)
-- Conflict detection and selective re-execution
+We welcome contributions! See CONTRIBUTING.md for guidelines.
 
----
+## License
 
-### 4. **Cross-Chain Bridge Infrastructure**
-
-**Bridge Adapters:**
-- Ethereum mainnet
-- Polygon
-- Generic EVM-compatible chains
-
-**Token Standards:**
-- ERC-20 (Fungible tokens)
-- ERC-721 (NFTs)
-- ERC-1155 (Multi-token)
-
-**Security:**
-- Merkle proof verification for cross-chain messages
-- Event signature validation
-
----
-
-## 📦 Crate Structure
-
-| Crate | Lines of Code | Purpose | Key Components |
-|-------|---------------|---------|----------------|
-| **evmora-core** | ~2,500 | Execution engine | `Stack`, `Memory`, `Executor`, `Opcodes` |
-| **evmora-compiler** | ~800 | Multi-lang compiler | `Compiler`, `IR`, Frontends, `Codegen` |
-| **evmora-runtime** | ~600 | Transaction orchestration | `EvmClient`, `ParallelExecutor` |
-| **evmora-bridge** | ~400 | Cross-chain logic | `BridgeManager`, Adapters, Token structs |
-| **evmora-plugins** | ~200 | Trait definitions | `GasCalculator`, `StorageBackend` |
-| **evmora-utils** | ~300 | Shared utilities | Config, Crypto, Error types |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Rust**: 1.70+ (stable channel)
-- **Cargo**: Latest version
-- **System**: Windows, Linux, or macOS
-
-### Installation & Build
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/evmora-evm
-cd evmora-evm
-
-# Build in release mode (optimized)
-cargo build --release --workspace
-
-# Build time: ~2-3 minutes on modern hardware
-```
-
-### Running Tests
-
-```bash
-# Full test suite
-cargo test --workspace
-
-# Specific test suites
-cargo test -p evmora-core           # Core engine tests
-cargo test --test e2e_multilang     # End-to-end integration
-cargo test --test parallel_exec     # Parallel execution
-
-# With output
-cargo test --workspace -- --nocapture
-```
-
-**Expected Results:**
-```
-test result: ok. 3 passed; 0 failed; 0 ignored
-```
-
----
-
-## 🛠️ Usage Examples
-
-### 1. Compiling Smart Contracts
-
-```bash
-# Build the compiler CLI
-cargo build --release --bin evmora-compiler
-
-# Compile a Solidity contract
-./target/release/evmora-compiler compile \
-    ./tests/fixtures/sol/Counter.sol \
-    --lang sol \
-    --deterministic \
-    --out ./artifacts
-
-# Compile Quorlin
-./target/release/evmora-compiler compile \
-    ./tests/fixtures/ql/Counter.ql \
-    --lang ql \
-    --out ./artifacts
-```
-
-**Artifact Structure:**
-```
-artifacts/
-└── Counter/
-    ├── sol/
-    │   ├── bytecode.bin       # Hex-encoded EVM bytecode
-    │   ├── abi.json           # Contract ABI
-    │   ├── ir.json            # Intermediate representation
-    │   └── build-info.json    # Compiler metadata
-    └── ql/
-        └── ... (same structure)
-```
-
-### 2. Running the Multi-Language Example
-
-```bash
-cargo run -p evmora-compiler --example multilang_compile
-```
-
-**Output:**
-```
---- ql Compilation ---
-Success! Bytecode length: 439
-Bytecode: 7f00000000...f3
-
---- sol Compilation ---
-Success! Bytecode length: 304
-Bytecode: 7f00000000...f3
-```
-
-### 3. Executing Contracts (Runtime)
-
-```bash
-cargo run -p evmora-runtime --example basic_contract
-```
-
-This demonstrates:
-1. Deploying bytecode to the EVM
-2. Executing a simple contract (PUSH/MSTORE/RETURN)
-3. Retrieving execution results and gas usage
-
----
-
-## 🔬 Testing Strategy
-
-### Test Coverage Matrix
-
-
-**evm_compliance.rs**
-- Tests basic arithmetic operations
-- Validates opcode behavior against EVM spec
-
----
-
-## 📊 Performance Characteristics
-
-### Benchmarking
-
-```bash
-# Run all benchmarks
-cargo bench --workspace
-
-# Core engine benchmarks
-cargo bench -p evmora-core
-
-# Runtime benchmarks
-cargo bench -p evmora-runtime
-```
-
-### Baseline Metrics (Single-threaded, Dev Machine)
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Simple ADD | ~50ns | Stack operation only |
-| SSTORE | ~500ns | Including hash calculation |
-| Contract Deployment | ~100μs | Includes init code execution |
-| Function Call | ~50μs | Simple counter increment |
-| 100 TX Batch (Parallel) | ~5ms | Non-conflicting transactions |
-
-**Hardware:** AMD Ryzen 9 / Intel i7-12700K, 32GB RAM, NVMe SSD
-
----
-
-## 🔧 Configuration
-
-Create `evmora.toml` in your project root:
-
-```toml
-[runtime]
-chain_id = 1337
-gas_limit = 10_000_000
-
-[compiler]
-optimization_level = 3
-deterministic = true
-
-[storage]
-backend = "memory"  # or "rocksdb", "postgres"
-```
-
----
-
-## 🏗️ Development Workflow
-
-### Adding a New Language Frontend
-
-1. Create `crates/evmora-compiler/src/frontends/your_lang.rs`
-2. Implement the `CompilerFrontend` trait:
-   ```rust
-   pub trait CompilerFrontend {
-       fn name(&self) -> &str;
-       fn extension(&self) -> &str;
-       fn compile_to_ir(&self, source: &str) -> Result<IrProgram>;
-   }
-   ```
-3. Register in `crates/evmora-compiler/src/lib.rs`
-4. Add test fixtures to `tests/fixtures/your_lang/`
-
-### Contributing
-
-See `CONTRIBUTING.md` for:
-- Code style guidelines
-- Pull request process
-- Testing requirements
-
----
-
-## 📚 Documentation
-
-- **API Docs**: `cargo doc --open --workspace`
-- **Architecture**: `docs/ARCHITECTURE.md`
-- **Testing Guide**: `TESTING.md`
-- **Examples**: `examples/` directory
-
----
-
-## 🗺️ Roadmap
-
-### Current Version: 0.1.5 (December 2025)
-
-**Completed:**
-- [x] Core EVM execution engine with full opcode support
-- [x] Multi-language compiler (Solidity, Quorlin, Vyper, Move)
-- [x] **Full Vyper and Move frontend support** ⭐ *Just Completed*
-- [x] Parallel execution prototype with correctness validation
-- [x] Comprehensive E2E integration tests
-- [x] CLI compiler tool with deterministic builds
-- [x] Gas fee metering and tracking across all languages
-
-**Current Focus:**
-- Production-ready ABI generation
-- Enhanced test coverage (Ethereum test suite)
-
----
-
-### Version 0.2.0 (Q2 2025 → Q1 2026)
-
-**Remaining Goals:**
-- [ ] **Optimistic parallel execution (Block-STM)** - High Priority
-  - Conflict detection and resolution
-  - Speculative execution engine
-  - Performance benchmarks vs sequential
-  
-- [ ] **Production-ready ABI generation** - In Progress
-  - Full Solidity ABI encoding/decoding
-  - Event and error signatures
-  - Function selector calculation
-  
-- [ ] **JSON-RPC server wrapper** - Medium Priority
-  - `eth_call`, `eth_sendTransaction` endpoints
-  - WebSocket support for subscriptions
-  - Rate limiting and authentication
-  
-- [ ] **State trie implementation** - Medium Priority
-  - Merkle Patricia Trie
-  - State root calculation
-  - Proof generation
-
----
-
-### Version 1.0.0 (Q3 2025 → Q3 2026)
-
-**Production Readiness:**
-- [ ] **Full EVM equivalence**
-  - Ethereum Foundation test suite (100% pass rate)
-  - Edge case coverage
-  - Opcode parity with latest EIPs
-  
-- [ ] **Persistent storage backends**
-  - RocksDB integration
-  - PostgreSQL adapter
-  - State snapshots and pruning
-  
-- [ ] **MEV protection mechanisms**
-  - Fair transaction ordering
-  - Frontrunning detection
-  - MEV auction integration
-  
-- [ ] **Cross-chain bridge deployment**
-  - Production bridge contracts
-  - Multi-chain message passing
-  - Security audits
-  
-- [ ] **Performance parity with Geth/Reth**
-  - 10,000+ TPS on modern hardware
-  - Sub-100ms block processing
-  - Optimized database queries
-
----
-
-### Version 2.0.0 (2027+)
-
-**Advanced Features:**
-- [ ] ZK-EVM integration
-- [ ] Account abstraction (EIP-4337)
-- [ ] Stateless client support
-- [ ] Advanced MEV strategies
-
----
-
-## ⚠️ Deployment Considerations
-
-### Local Development
-**No cloud deployment required.** Evmora runs entirely on your local machine for development and testing.
-
-### Production Deployment
-For running a **public node**, you would:
-1. Wrap Evmora in a JSON-RPC server (e.g., using `jsonrpsee`)
-2. Deploy to a cloud provider (AWS, DigitalOcean, etc.)
-3. Configure persistent storage and networking
-
-**Current Status:** Evmora is an execution library, not a standalone node. Production deployment infrastructure is planned for v0.2.0.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see LICENSE file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Ethereum Foundation**: EVM specification
-- **Rust Community**: Exceptional tooling and libraries
-- **OpenZeppelin**: Contract standards reference
-- **Quorlin Project**: Language design inspiration
-
----
-
-## 📧 Contact & Support
-
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions
-- **Email**: evmora@example.com
-- **Discord**: [Coming Soon]
-
----
-
-**Built with ❤️ and Rust for the next generation of blockchain infrastructure.**
+MIT License - See LICENSE file

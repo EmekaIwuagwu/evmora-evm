@@ -1,9 +1,23 @@
-use super::traits::CompilerFrontend;
+use crate::frontends::traits::CompilerFrontend;
 use crate::ir::{IrProgram, IrStatement};
-use anyhow::Result;
-use primitive_types::U256;
+use anyhow::{anyhow, Context, Result};
+use std::io::Write;
+use std::process::Command;
+use tempfile::Builder;
 
 pub struct VyperFrontend;
+
+impl VyperFrontend {
+    pub fn new() -> Self {
+        Self
+    }
+
+    fn find_vyper(&self) -> Result<std::path::PathBuf> {
+        which::which("vyper").or_else(|_| {
+             std::env::var("VYPER_PATH").map(std::path::PathBuf::from).map_err(|_| anyhow!("vyper not found"))
+        }).context("Vyper compiler (vyper) not found. Please install vyper or set VYPER_PATH.")
+    }
+}
 
 impl CompilerFrontend for VyperFrontend {
     fn name(&self) -> &str {
@@ -14,80 +28,46 @@ impl CompilerFrontend for VyperFrontend {
         "vy"
     }
 
-    fn compile_to_ir(&self, source: &str, backend: Option<&str>) -> Result<IrProgram> {
-        // Determine backend
-        use crate::semantics::backend::Backend;
-        let backend = match backend {
-            Some("evm") | None => Backend::EVM,
-            Some("solana") => Backend::Solana,
-            Some("polkadot") | Some("ink") => Backend::Polkadot,
-            Some("aptos") | Some("move") => Backend::Aptos,
-            Some("quorlin") => Backend::Quorlin,
-            Some(other) => return Err(anyhow::anyhow!("Unknown backend: {}", other)),
-        };
+    fn compile_to_ir(&self, source: &str, _backend: Option<&str>) -> Result<IrProgram> {
+        let vyper_path = self.find_vyper()?;
 
-        // SEMANTIC ANALYSIS
-        use super::vyper_semantics::VyperSemantics;
-        VyperSemantics::analyze(source, backend)?;
+        // Write source to temp file
+        let mut temp_file = Builder::new()
+            .suffix(".vy")
+            .tempfile()
+            .context("Failed to create temp file for vyper source")?;
+
+        write!(temp_file, "{}", source).context("Failed to write source code to temp file")?;
+        let temp_path = temp_file.path().to_owned();
+
+        // Run vyper
+        // vyper -f bytecode <file>
+        let output = Command::new(vyper_path)
+            .arg("-f")
+            .arg("bytecode")
+            .arg(temp_path)
+            .output()
+            .context("Failed to execute vyper")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow!("Vyper compilation failed:\n{}", stderr));
+        }
+
+        let bytecode_hex = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        // Remove 0x prefix if present
+        let bytecode_hex = bytecode_hex.trim_start_matches("0x");
+
+        if bytecode_hex.is_empty() {
+            return Err(anyhow!("Vyper returned empty bytecode"));
+        }
+
+        let bytecode = hex::decode(bytecode_hex)
+            .context("Failed to decode bytecode hex from vyper output")?;
+
         let mut program = IrProgram::new();
-        
-        let mut functions = Vec::new();
-        
-        // 1. First Pass: Collect function names
-        let re = regex::Regex::new(r"def\s+(?P<name>\w+)\s*\(").unwrap();
-        for cap in re.captures_iter(source) {
-            let func_name = cap["name"].to_string();
-            if func_name != "__init__" {
-                functions.push(func_name);
-            }
-        }
+        program.statements.push(IrStatement::RawBytecode(bytecode));
 
-        if functions.is_empty() {
-            program.statements.push(IrStatement::Stop);
-            return Ok(program);
-        }
-
-        // 2. Generate Dispatcher
-        program.statements.push(IrStatement::CallDataLoad(0));
-        program.statements.push(IrStatement::Push(U256::from(224)));
-
-        for func in &functions {
-            let selector = if func == "increment" {
-                U256::from(0xd09de08a_u64) // increment() selector
-            } else {
-                U256::from(0x12345678_u64)
-            };
-            
-            program.statements.push(IrStatement::Push(selector));
-            program.statements.push(IrStatement::Eq);
-            program.statements.push(IrStatement::JumpI(func.clone()));
-            program.statements.push(IrStatement::CallDataLoad(0));
-            program.statements.push(IrStatement::Push(U256::from(224)));
-        }
-
-        program.statements.push(IrStatement::Stop);
-
-        // 3. Generate Function Bodies
-        for func in &functions {
-            program.statements.push(IrStatement::Label(func.clone()));
-            
-            // Check for self.count += 1 pattern
-            if source.contains("self.count += 1") || source.contains("self.count = self.count + 1") {
-                // SLOAD 0, ADD 1, SSTORE 0
-                program.statements.push(IrStatement::Push(U256::zero()));
-                program.statements.push(IrStatement::SLoad);
-                program.statements.push(IrStatement::Push(U256::one()));
-                program.statements.push(IrStatement::Add);
-                program.statements.push(IrStatement::Push(U256::zero()));
-                program.statements.push(IrStatement::SStore);
-            }
-
-            // Return success
-            program.statements.push(IrStatement::Push(U256::one()));
-            program.statements.push(IrStatement::Store { offset: 0 });
-            program.statements.push(IrStatement::Return { offset: 0, size: 32 });
-        }
-        
         Ok(program)
     }
 }

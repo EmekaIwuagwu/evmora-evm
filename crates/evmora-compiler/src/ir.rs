@@ -4,8 +4,14 @@ use primitive_types::U256;
 pub enum IrStatement {
     Push(U256),
     Pop,
+    Dup(u8), // Dup1..16
+    Swap(u8), // Swap1..16
     Add,
     Sub,
+    Mul,
+    Div,
+    Shr, // Shift Right
+    Shl, // Shift Left
     Sha3, // For mapping calculations
     Eq,
     IsZero,
@@ -26,6 +32,7 @@ pub enum IrStatement {
     Label(String),
     FunctionCall { name: String, args: Vec<IrStatement> },
     Stop,
+    RawBytecode(Vec<u8>),
 }
 
 #[derive(Debug, Clone)]

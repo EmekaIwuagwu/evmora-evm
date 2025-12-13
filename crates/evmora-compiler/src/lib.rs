@@ -4,7 +4,6 @@ pub mod optimizer;
 pub mod yul;
 pub mod ir;
 pub mod frontends;
-pub mod semantics;
 
 use frontends::{CompilerFrontend, QuorlinFrontend, SolidityFrontend, VyperFrontend, MoveFrontend};
 use codegen::Codegen;

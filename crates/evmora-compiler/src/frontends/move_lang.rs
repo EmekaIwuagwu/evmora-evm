@@ -1,91 +1,98 @@
 use super::traits::CompilerFrontend;
 use crate::ir::{IrProgram, IrStatement};
-use anyhow::Result;
-use primitive_types::U256;
+use anyhow::{anyhow, Context, Result};
+use std::process::Command;
+use std::io::Write;
+use tempfile::Builder;
+use std::fs;
 
 pub struct MoveFrontend;
 
+impl MoveFrontend {
+    pub fn new() -> Self {
+        Self
+    }
+    
+    fn find_move(&self) -> Result<std::path::PathBuf> {
+        // Look for 'move' or 'aptos' CLI
+        which::which("aptos").or_else(|_| which::which("move"))
+            .context("Move compiler not found. Please install 'aptos' CLI or 'move' CLI.")
+    }
+}
+
 impl CompilerFrontend for MoveFrontend {
-    fn name(&self) -> &str {
-        "Move"
-    }
+    fn name(&self) -> &str { "Move" }
+    fn extension(&self) -> &str { "move" }
 
-    fn extension(&self) -> &str {
-        "move"
-    }
-
-    fn compile_to_ir(&self, source: &str, backend: Option<&str>) -> Result<IrProgram> {
-        // Determine backend
-        use crate::semantics::backend::Backend;
-        let backend = match backend {
-            Some("evm") | None => Backend::EVM,
-            Some("solana") => Backend::Solana,
-            Some("polkadot") | Some("ink") => Backend::Polkadot,
-            Some("aptos") | Some("move") => Backend::Aptos,
-            Some("quorlin") => Backend::Quorlin,
-            Some(other) => return Err(anyhow::anyhow!("Unknown backend: {}", other)),
-        };
-
-        // SEMANTIC ANALYSIS
-        use super::move_semantics::MoveSemantics;
-        MoveSemantics::analyze(source, backend)?;
-        let mut program = IrProgram::new();
+    fn compile_to_ir(&self, source: &str, _backend: Option<&str>) -> Result<IrProgram> {
+        let move_cli = self.find_move()?;
         
-        let mut functions = Vec::new();
+        // Move requires a package structure:
+        // temp_dir/
+        //   Move.toml
+        //   sources/
+        //     Contract.move
         
-        // 1. First Pass: Collect function names
-        let re = regex::Regex::new(r"public\s+fun\s+(?P<name>\w+)\s*\(").unwrap();
-        for cap in re.captures_iter(source) {
-            let func_name = cap["name"].to_string();
-            functions.push(func_name);
+        let temp_dir = Builder::new().prefix("move_build").tempdir()?;
+        let sources_dir = temp_dir.path().join("sources");
+        fs::create_dir(&sources_dir)?;
+        
+        // Write source file
+        let file_path = sources_dir.join("Contract.move");
+        fs::write(&file_path, source)?;
+        
+        // Write minimal Move.toml
+        let move_toml = r#"
+[package]
+name = "TempPackage"
+version = "0.0.1"
+"#;
+        fs::write(temp_dir.path().join("Move.toml"), move_toml)?;
+        
+        // Run build command
+        // aptos move build --package-dir <path>
+        // OR move build -p <path>
+        // We'll try generic arguments that might work for both or detect
+        
+        let exe_name = move_cli.file_name().unwrap().to_string_lossy();
+        let mut cmd = Command::new(&move_cli);
+        
+        if exe_name.contains("aptos") {
+            cmd.arg("move").arg("compile").arg("--package-dir").arg(temp_dir.path());
+        } else {
+            cmd.arg("build").arg("-p").arg(temp_dir.path());
         }
-
-        if functions.is_empty() {
-            program.statements.push(IrStatement::Stop);
-            return Ok(program);
+        
+        let output = cmd.output().context("Failed to execute move compiler")?;
+        
+        if !output.status.success() {
+             return Err(anyhow!("Move compilation failed:\n{}", String::from_utf8_lossy(&output.stderr)));
         }
-
-        // 2. Generate Dispatcher
-        program.statements.push(IrStatement::CallDataLoad(0));
-        program.statements.push(IrStatement::Push(U256::from(224)));
-
-        for func in &functions {
-            let selector = if func == "increment" {
-                U256::from(0xd09de08a_u64) // increment() selector
-            } else {
-                U256::from(0x12345678_u64)
-            };
-            
-            program.statements.push(IrStatement::Push(selector));
-            program.statements.push(IrStatement::Eq);
-            program.statements.push(IrStatement::JumpI(func.clone()));
-            program.statements.push(IrStatement::CallDataLoad(0));
-            program.statements.push(IrStatement::Push(U256::from(224)));
-        }
-
-        program.statements.push(IrStatement::Stop);
-
-        // 3. Generate Function Bodies
-        for func in &functions {
-            program.statements.push(IrStatement::Label(func.clone()));
-            
-            // For Move, increment is typically done via resource manipulation
-            // We'll check for common patterns
-            if func == "increment" || source.contains("+ 1") {
-                // SLOAD 0, ADD 1, SSTORE 0
-                program.statements.push(IrStatement::Push(U256::zero()));
-                program.statements.push(IrStatement::SLoad);
-                program.statements.push(IrStatement::Push(U256::one()));
-                program.statements.push(IrStatement::Add);
-                program.statements.push(IrStatement::Push(U256::zero()));
-                program.statements.push(IrStatement::SStore);
+        
+        // Compilation successful. Now find the bytecode.
+        // Usually in build/TempPackage/bytecode_modules/Contract.mv
+        let build_dir = temp_dir.path().join("build").join("TempPackage").join("bytecode_modules");
+        
+        // Find first .mv file
+        let mut bytecode = Vec::new();
+        if build_dir.exists() {
+            for entry in fs::read_dir(build_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.extension().map_or(false, |ext| ext == "mv") {
+                    bytecode = fs::read(path)?;
+                    break;
+                }
             }
-
-            // Return success
-            program.statements.push(IrStatement::Push(U256::one()));
-            program.statements.push(IrStatement::Store { offset: 0 });
-            program.statements.push(IrStatement::Return { offset: 0, size: 32 });
         }
+        
+        if bytecode.is_empty() {
+             return Err(anyhow!("Could not find compiled bytecode in output directory"));
+        }
+        
+        // Wrap in IrProgram
+        let mut program = IrProgram::new();
+        program.statements.push(IrStatement::RawBytecode(bytecode));
         
         Ok(program)
     }
