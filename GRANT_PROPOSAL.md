@@ -424,7 +424,7 @@ Compare gas fees across platforms and deploy to the most cost-effective chain.
 ### Technical Specifications
 - **Language:** Rust
 - **Platforms:** EVM, Solana, Polkadot, Aptos, Quorlin
-- **License:** [Specify - MIT/Apache 2.0 recommended]
+- **License:** MIT License
 - **Status:** Production-ready
 
 ---
