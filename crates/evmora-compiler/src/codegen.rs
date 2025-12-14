@@ -33,6 +33,11 @@ impl Codegen {
                 crate::ir::IrStatement::Or | 
                 crate::ir::IrStatement::Not | 
                 crate::ir::IrStatement::IsZero |
+                crate::ir::IrStatement::Log0 |
+                crate::ir::IrStatement::Log1 |
+                crate::ir::IrStatement::Log2 |
+                crate::ir::IrStatement::Log3 |
+                crate::ir::IrStatement::Log4 |
                 crate::ir::IrStatement::Stop => pc += 1,
                 
                 crate::ir::IrStatement::Dup(_) => pc += 1,
@@ -129,6 +134,11 @@ impl Codegen {
                 }, 
                 crate::ir::IrStatement::Label(_) => bytecode.push(0x5b), 
                 crate::ir::IrStatement::RawBytecode(bytes) => bytecode.extend_from_slice(bytes),
+                crate::ir::IrStatement::Log0 => bytecode.push(0xa0),
+                crate::ir::IrStatement::Log1 => bytecode.push(0xa1),
+                crate::ir::IrStatement::Log2 => bytecode.push(0xa2),
+                crate::ir::IrStatement::Log3 => bytecode.push(0xa3),
+                crate::ir::IrStatement::Log4 => bytecode.push(0xa4),
                 _ => {}
             }
         }

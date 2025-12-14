@@ -446,8 +446,21 @@ impl<'a> Executor<'a> {
                     let remaining_gas = self.context.gas_limit.saturating_sub(self.gas_used);
                     self.stack.push(U256::from(remaining_gas))?;
                 }
+                0x5e => { // MCOPY
+                    let dest_offset = self.stack.pop()?.as_usize();
+                    let offset = self.stack.pop()?.as_usize();
+                    let size = self.stack.pop()?.as_usize();
+                    
+                    if size > 0 {
+                        let data = self.memory.load(offset, size)?;
+                        self.memory.store(dest_offset, &data)?;
+                    }
+                }
                 0x5b => { // JUMPDEST
                     // No-op
+                }
+                0x5f => { // PUSH0
+                    self.stack.push(U256::zero())?;
                 }
                 0x60..=0x7f => { // PUSH1..PUSH32
                     let n = (op - 0x60 + 1) as usize;

@@ -1,0 +1,9 @@
+{
+  "compiler_version": "0.1.0",
+  "timestamp": "2025-12-14T10:54:47.476471100+00:00",
+  "opts": {
+    "language": null,
+    "target": "evm",
+    "deterministic": false
+  }
+}

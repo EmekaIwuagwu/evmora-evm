@@ -32,6 +32,11 @@ pub enum IrStatement {
     Label(String),
     FunctionCall { name: String, args: Vec<IrStatement> },
     Stop,
+    Log0,
+    Log1,
+    Log2,
+    Log3,
+    Log4,
     RawBytecode(Vec<u8>),
 }
 

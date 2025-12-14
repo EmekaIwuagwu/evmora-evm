@@ -17,6 +17,7 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.4", features = ["derive"] }
 tempfile = "3.8"
 which = "6.0"
+sha3.workspace = true
 
 [[bin]]
 name = "evmora-compiler"

@@ -1,0 +1,1 @@
+"IrProgram { statements: [CallDataLoad(0), Push(224), Shr, Dup(1), Push(305419896), Eq, JumpI(\"mint\"), Stop, Label(\"mint\"), Push(4096), Push(0), SLoad, Add, Push(0), SStore, Stop] }"
