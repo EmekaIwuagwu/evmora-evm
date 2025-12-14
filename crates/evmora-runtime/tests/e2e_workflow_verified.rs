@@ -110,8 +110,11 @@ async fn test_e2e_quorlin_contract_deployment_and_execution() {
         value: U256::zero(),
         data: init_code, // Init code wrapping runtime code
         gas_limit: 1000000,
-        nonce: 0,
-        signature: None,
+        nonce: U256::zero(),
+        gas_price: U256::zero(),
+        v: 0,
+        r: H256::zero(),
+        s: H256::zero(),
     };
     
     let result = client.execute(deploy_tx).await.expect("Deployment failed");
@@ -132,8 +135,11 @@ async fn test_e2e_quorlin_contract_deployment_and_execution() {
         value: U256::zero(),
         data: selector,
         gas_limit: 100000,
-        nonce: 1, 
-        signature: None,
+        nonce: U256::from(1),
+        gas_price: U256::zero(),
+        v: 0,
+        r: H256::zero(),
+        s: H256::zero(),
     };
     
     let call_result = client.execute(call_tx).await.expect("Call failed");

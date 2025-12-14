@@ -46,7 +46,7 @@ async fn test_multilang_e2e_counter() -> anyhow::Result<()> {
 
         // 1. Compile
         let compiler = Compiler::new();
-        let opts = CompileOpts { language: Some(lang.to_string()), deterministic: true };
+        let opts = CompileOpts { language: Some(lang.to_string()), target: None, deterministic: true };
         let artifact = compiler.compile_file(path.to_str().unwrap(), opts)?;
         
         let runtime_bytecode = hex::decode(&artifact.bytecode)?;
